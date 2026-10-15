@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Light Green & Blue Theme Styling with Offline Bluetooth Indicator
+# Custom Light Green & Blue Theme Styling with Enhanced Header Description
 st.markdown("""
     <style>
     .main { background-color: #f0fdf4; }
@@ -51,11 +51,18 @@ st.markdown("""
     h1, h2, h3 { color: #0369a1 !important; }
     .app-header-box {
         background-color: #ffffff;
-        padding: 15px 20px;
+        padding: 18px 22px;
         border-radius: 12px;
         border-left: 6px solid #0284c7;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.08);
         margin-bottom: 15px;
+    }
+    .project-description {
+        font-size: 0.92rem;
+        color: #334155;
+        line-height: 1.5;
+        margin-top: 8px;
+        margin-bottom: 10px;
     }
     .bt-offline-banner {
         background-color: #e0f2fe;
@@ -97,7 +104,7 @@ if "contacts" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = load_json(HISTORY_FILE, {
         "Peer Device 1": [
-            {"sender": "Peer Device 1", "type": "text", "content": "Welcome to BlueTalk offline communication! Check the live Bluetooth status banner above.", "time": "10:00 AM"}
+            {"sender": "Peer Device 1", "type": "text", "content": "Welcome to BlueTalk! The project description is highlighted in the header above.", "time": "10:00 AM"}
         ]
     })
 
@@ -150,14 +157,17 @@ with st.sidebar:
         save_json(HISTORY_FILE, st.session_state.history)
         st.rerun()
 
-# Main Chat Area Header with App Details
+# Main Chat Area Header with Best Project Description
 active_peer = st.session_state.active_contact
 peer_info = st.session_state.contacts.get(active_peer, {"address": "Unknown", "status": "Offline"})
 
 st.markdown(f"""
     <div class="app-header-box">
-        <h2 style="margin:0; padding:0; font-size: 1.4rem;">💬 BlueTalk Messenger</h2>
-        <p style="margin: 4px 0 0 0; color: #334155; font-size: 0.9rem;">
+        <h2 style="margin:0; padding:0; font-size: 1.5rem; color: #0369a1;">💬 BlueTalk Messenger</h2>
+        <div class="project-description">
+            <b>BlueTalk</b> is a decentralized, WhatsApp-style offline messaging application built for peer-to-peer communication without internet or cellular routers. It features a lightweight Streamlit interface paired with a native Android Bluetooth socket gateway to exchange text messages, emojis, high-resolution photos, playable videos, and documents entirely over local radio waves.
+        </div>
+        <p style="margin: 4px 0 0 0; color: #475569; font-size: 0.85rem;">
             <b>Active Chat:</b> {active_peer} &nbsp;|&nbsp; 
             <b>BT Address:</b> <code>{peer_info['address']}</code> &nbsp;|&nbsp; 
             <b>Mode:</b> {st.session_state.connection_mode}
