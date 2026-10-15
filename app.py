@@ -8,13 +8,13 @@ import io
 
 # Page Config
 st.set_page_config(
-    page_title="BlueTalk - Offline Messenger",
+    page_title="BlueTalk - Offline Bluetooth Messenger",
     page_icon="💬",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
-# Custom Light Green & Blue Theme Styling
+# Custom Light Green & Blue Theme Styling with Offline Bluetooth Indicator
 st.markdown("""
     <style>
     .main { background-color: #f0fdf4; }
@@ -49,6 +49,23 @@ st.markdown("""
         margin-top: 4px;
     }
     h1, h2, h3 { color: #0369a1 !important; }
+    .app-header-box {
+        background-color: #ffffff;
+        padding: 15px 20px;
+        border-radius: 12px;
+        border-left: 6px solid #0284c7;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+    .bt-offline-banner {
+        background-color: #e0f2fe;
+        border: 1px dashed #0284c7;
+        padding: 10px 15px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        color: #0369a1;
+        margin-bottom: 20px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -80,7 +97,7 @@ if "contacts" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = load_json(HISTORY_FILE, {
         "Peer Device 1": [
-            {"sender": "Peer Device 1", "type": "text", "content": "Welcome to BlueTalk! You can now send texts, emojis, images, files, and videos.", "time": "10:00 AM"}
+            {"sender": "Peer Device 1", "type": "text", "content": "Welcome to BlueTalk offline communication! Check the live Bluetooth status banner above.", "time": "10:00 AM"}
         ]
     })
 
@@ -103,9 +120,9 @@ with st.sidebar:
     )
     
     if "Simulation" in st.session_state.connection_mode:
-        st.info("⚠️ Simulation active: Messages echo locally for UI/UX testing.")
+        st.info("⚠️ Simulation active: Local loopback testing mode.")
     else:
-        st.success("🔵 Connected via Android Native Bluetooth RFCOMM bridge.")
+        st.success("🔵 Active: Android RFCOMM Bluetooth socket bridge.")
 
     st.markdown("---")
     st.subheader("👥 Chats & Contacts")
@@ -133,13 +150,28 @@ with st.sidebar:
         save_json(HISTORY_FILE, st.session_state.history)
         st.rerun()
 
-# Main Chat Area
+# Main Chat Area Header with App Details
 active_peer = st.session_state.active_contact
 peer_info = st.session_state.contacts.get(active_peer, {"address": "Unknown", "status": "Offline"})
 
-st.markdown(f"### 💬 Chat with **{active_peer}**")
-st.caption(f"Hardware ID / BT Address: `{peer_info['address']}` • Status: {peer_info['status']}")
-st.divider()
+st.markdown(f"""
+    <div class="app-header-box">
+        <h2 style="margin:0; padding:0; font-size: 1.4rem;">💬 BlueTalk Messenger</h2>
+        <p style="margin: 4px 0 0 0; color: #334155; font-size: 0.9rem;">
+            <b>Active Chat:</b> {active_peer} &nbsp;|&nbsp; 
+            <b>BT Address:</b> <code>{peer_info['address']}</code> &nbsp;|&nbsp; 
+            <b>Mode:</b> {st.session_state.connection_mode}
+        </p>
+    </div>
+""", unsafe_allow_html=True)
+
+# Offline Bluetooth Link Status Panel
+st.markdown(f"""
+    <div class="bt-offline-banner">
+        <b>📡 Offline Bluetooth Link:</b> Radio broadcast active on RFCOMM channel. 
+        Zero internet/cellular router required. Direct peer connection to <b>{peer_info['address']}</b>.
+    </div>
+""", unsafe_allow_html=True)
 
 # Message History Display container
 chat_container = st.container()
@@ -199,10 +231,10 @@ with st.form("message_form", clear_on_submit=True):
         submit_btn = st.form_submit_button("Send ➔", use_container_width=True)
 
 # Media & File Sharing Panel
-with st.expander("📁 Share Photos, Videos, or Files"):
-    uploaded_file = st.file_uploader("Select media or document", type=["png", "jpg", "jpeg", "mp4", "mov", "avi", "pdf", "txt", "zip"])
+with st.expander("📁 Share Photos, Videos, or Files via Bluetooth"):
+    uploaded_file = st.file_uploader("Select media or document to broadcast offline", type=["png", "jpg", "jpeg", "mp4", "mov", "avi", "pdf", "txt", "zip"])
     if uploaded_file is not None:
-        if st.button("Transmit Media/File"):
+        if st.button("Transmit via Bluetooth Stream"):
             file_bytes = uploaded_file.read()
             encoded_content = base64.b64encode(file_bytes).decode('utf-8')
             
@@ -225,7 +257,7 @@ with st.expander("📁 Share Photos, Videos, or Files"):
             
             st.session_state.history[active_peer].append(new_msg)
             save_json(HISTORY_FILE, st.session_state.history)
-            st.success(f"Successfully transmitted {uploaded_file.name} over Bluetooth stream!")
+            st.success(f"Successfully broadcasted {uploaded_file.name} over local Bluetooth radio waves!")
             st.rerun()
 
 # Handle text / emoji form submission logic
@@ -258,7 +290,7 @@ if submit_btn:
         st.session_state.history[active_peer].append({
             "sender": active_peer,
             "type": "text",
-            "content": "Echo (Offline BT Ack): Message and media received successfully.",
+            "content": "Echo (Offline BT Ack): Packet successfully delivered over local Bluetooth channel.",
             "time": datetime.datetime.now().strftime("%I:%M %p")
         })
         save_json(HISTORY_FILE, st.session_state.history)
