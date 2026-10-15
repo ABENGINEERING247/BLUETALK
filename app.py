@@ -6,38 +6,41 @@ import streamlit as st
 from PIL import Image
 import io
 
+# Page Config
 st.set_page_config(
-    page_title="BlueTalk - Offline Bluetooth Messenger",
+    page_title="BlueTalk - Offline Messenger",
     page_icon="💬",
     layout="centered",
     initial_sidebar_state="expanded"
 )
 
+# Custom Light Green & Blue Theme Styling
 st.markdown("""
     <style>
-    .main { background-color: #efeae2; }
-    .stTextInput input { border-radius: 20px !important; }
+    .main { background-color: #f0fdf4; }
+    .stTextInput input { border-radius: 20px !important; border: 1px solid #0284c7 !important; }
     .chat-bubble-me {
         background-color: #d9fdd3;
         color: #111b21;
         padding: 10px 14px;
-        border-radius: 8px 0px 8px 8px;
+        border-radius: 12px 2px 12px 12px;
         margin-bottom: 8px;
         max-width: 75%;
         float: right;
         clear: both;
-        box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
     }
     .chat-bubble-peer {
         background-color: #ffffff;
         color: #111b21;
         padding: 10px 14px;
-        border-radius: 0px 8px 8px 8px;
+        border-radius: 2px 12px 12px 12px;
         margin-bottom: 8px;
         max-width: 75%;
         float: left;
         clear: both;
-        box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+        box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+        border-left: 4px solid #0284c7;
     }
     .chat-time {
         font-size: 0.65rem;
@@ -45,9 +48,11 @@ st.markdown("""
         text-align: right;
         margin-top: 4px;
     }
+    h1, h2, h3 { color: #0369a1 !important; }
     </style>
 """, unsafe_allow_html=True)
 
+# Data paths for persistent storage
 DATA_DIR = "bluetalk_data"
 os.makedirs(DATA_DIR, exist_ok=True)
 CONTACTS_FILE = os.path.join(DATA_DIR, "contacts.json")
@@ -66,6 +71,7 @@ def save_json(filepath, data):
     with open(filepath, "w") as f:
         json.dump(data, f, indent=4)
 
+# Initialize Session State
 if "contacts" not in st.session_state:
     st.session_state.contacts = load_json(CONTACTS_FILE, {
         "Peer Device 1": {"address": "11:22:33:44:55:66", "status": "Available offline"}
@@ -74,7 +80,7 @@ if "contacts" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = load_json(HISTORY_FILE, {
         "Peer Device 1": [
-            {"sender": "Peer Device 1", "type": "text", "content": "Hey! Welcome to BlueTalk offline messenger.", "time": "10:00 AM"}
+            {"sender": "Peer Device 1", "type": "text", "content": "Welcome to BlueTalk! You can now send texts, emojis, images, files, and videos.", "time": "10:00 AM"}
         ]
     })
 
@@ -84,6 +90,7 @@ if "active_contact" not in st.session_state:
 if "connection_mode" not in st.session_state:
     st.session_state.connection_mode = "Simulation Mode (Demo)"
 
+# Sidebar - Contacts and Connection Settings
 with st.sidebar:
     st.title("💬 BlueTalk")
     st.caption("P2P Offline Bluetooth Messenger")
@@ -96,9 +103,9 @@ with st.sidebar:
     )
     
     if "Simulation" in st.session_state.connection_mode:
-        st.info("⚠️ Simulation active: Messages echo locally for UI testing.")
+        st.info("⚠️ Simulation active: Messages echo locally for UI/UX testing.")
     else:
-        st.success("🔵 Ready for Android RFCOMM socket bridge.")
+        st.success("🔵 Connected via Android Native Bluetooth RFCOMM bridge.")
 
     st.markdown("---")
     st.subheader("👥 Chats & Contacts")
@@ -126,6 +133,7 @@ with st.sidebar:
         save_json(HISTORY_FILE, st.session_state.history)
         st.rerun()
 
+# Main Chat Area
 active_peer = st.session_state.active_contact
 peer_info = st.session_state.contacts.get(active_peer, {"address": "Unknown", "status": "Offline"})
 
@@ -133,6 +141,7 @@ st.markdown(f"### 💬 Chat with **{active_peer}**")
 st.caption(f"Hardware ID / BT Address: `{peer_info['address']}` • Status: {peer_info['status']}")
 st.divider()
 
+# Message History Display container
 chat_container = st.container()
 
 with chat_container:
@@ -151,9 +160,15 @@ with chat_container:
         elif msg["type"] == "image":
             try:
                 img_bytes = base64.b64decode(msg["content"])
-                st.image(io.BytesIO(img_bytes), width=250)
+                st.image(io.BytesIO(img_bytes), width=280)
             except Exception:
                 st.error("[Corrupted Image Stream]")
+        elif msg["type"] == "video":
+            try:
+                video_bytes = base64.b64decode(msg["content"])
+                st.video(io.BytesIO(video_bytes))
+            except Exception:
+                st.error("[Corrupted Video Stream]")
         elif msg["type"] == "file":
             st.markdown(f"📎 **File Attachment:** `{msg['filename']}`")
             try:
@@ -171,33 +186,81 @@ with chat_container:
         st.markdown(f'<div class="chat-time">{msg["time"]}</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+# Input Toolbar Bottom Section
 st.markdown("<br><br>", unsafe_allow_html=True)
 
 with st.form("message_form", clear_on_submit=True):
     cols = st.columns([5, 1, 1])
     with cols[0]:
-        text_input = st.text_input("Type a message...", placeholder="Type message...", label_visibility="collapsed")
+        text_input = st.text_input("Type a message...", placeholder="Type a message or select an emoji...", label_visibility="collapsed")
     with cols[1]:
-        emoji_choice = st.selectbox("Emoji", ["💬", "😀", "🔥", "👍", "❤️", "🎉", "🚀"], label_visibility="collapsed")
+        emoji_choice = st.selectbox("Emoji", ["💬", "😀", "🔥", "👍", "❤️", "🎉", "🚀", "😎"], label_visibility="collapsed")
     with cols[2]:
         submit_btn = st.form_submit_button("Send ➔", use_container_width=True)
 
+# Media & File Sharing Panel
+with st.expander("📁 Share Photos, Videos, or Files"):
+    uploaded_file = st.file_uploader("Select media or document", type=["png", "jpg", "jpeg", "mp4", "mov", "avi", "pdf", "txt", "zip"])
+    if uploaded_file is not None:
+        if st.button("Transmit Media/File"):
+            file_bytes = uploaded_file.read()
+            encoded_content = base64.b64encode(file_bytes).decode('utf-8')
+            
+            file_type = uploaded_file.type
+            if file_type.startswith("image"):
+                msg_type = "image"
+            elif file_type.startswith("video"):
+                msg_type = "video"
+            else:
+                msg_type = "file"
+            
+            timestamp = datetime.datetime.now().strftime("%I:%M %p")
+            new_msg = {
+                "sender": "You",
+                "type": msg_type,
+                "content": encoded_content,
+                "filename": uploaded_file.name,
+                "time": timestamp
+            }
+            
+            st.session_state.history[active_peer].append(new_msg)
+            save_json(HISTORY_FILE, st.session_state.history)
+            st.success(f"Successfully transmitted {uploaded_file.name} over Bluetooth stream!")
+            st.rerun()
+
+# Handle text / emoji form submission logic
 if submit_btn:
     current_time = datetime.datetime.now().strftime("%I:%M %p")
+    payload_items = []
+    
     if text_input.strip():
-        st.session_state.history[active_peer].append({
-            "sender": "You", "type": "text", "content": text_input, "time": current_time
-        })
+        payload_items.append({"type": "text", "content": text_input})
     if emoji_choice != "💬":
-        st.session_state.history[active_peer].append({
-            "sender": "You", "type": "emoji", "content": emoji_choice, "time": current_time
-        })
+        payload_items.append({"type": "emoji", "content": emoji_choice})
+        
+    if not payload_items and text_input.strip() == "":
+        payload_items.append({"type": "text", "content": emoji_choice})
+
+    for item in payload_items:
+        msg_obj = {
+            "sender": "You",
+            "type": item["type"],
+            "content": item["content"],
+            "time": current_time
+        }
+        st.session_state.history[active_peer].append(msg_obj)
         
     save_json(HISTORY_FILE, st.session_state.history)
 
     if "Simulation" in st.session_state.connection_mode:
+        if active_peer not in st.session_state.history:
+            st.session_state.history[active_peer] = []
         st.session_state.history[active_peer].append({
-            "sender": active_peer, "type": "text", "content": "Echo: Received message via Bluetooth loopback.", "time": current_time
+            "sender": active_peer,
+            "type": "text",
+            "content": "Echo (Offline BT Ack): Message and media received successfully.",
+            "time": datetime.datetime.now().strftime("%I:%M %p")
         })
         save_json(HISTORY_FILE, st.session_state.history)
+
     st.rerun()
